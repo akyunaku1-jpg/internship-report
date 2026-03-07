@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
+  "engines": {
+    "node": "18.x"
+  },
   "scripts": {
     "dev": "node index.js",
     "start": "node index.js"
@@ -12,7 +15,6 @@
     "cors": "^2.8.5",
     "dotenv": "^16.4.4",
     "express": "^4.18.2",
-    "express-validator": "^7.0.1",
-    "hr-system": "file:.."
+    "express-validator": "^7.0.1"
   }
 }
