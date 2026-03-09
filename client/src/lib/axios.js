@@ -1,8 +1,10 @@
 import axios from "axios";
 import { supabase } from "./supabase";
 
+const baseURL = import.meta.env.VITE_API_URL?.trim() || (import.meta.env.PROD ? "" : "http://localhost:3001");
+
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || "http://localhost:3001",
+  baseURL,
 });
 
 async function resolveAccessToken() {
