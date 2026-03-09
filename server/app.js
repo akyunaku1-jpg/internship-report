@@ -17,11 +17,18 @@ const app = express();
 
 app.use(
   cors({
-    origin: [
-      "https://internship-report-phi.vercel.app",
-      "http://localhost:5173",
-      "http://localhost:3001",
-    ],
+    origin(origin, callback) {
+      const allowed = [
+        "https://internship-report-phi.vercel.app",
+        "http://localhost:5173",
+        "http://localhost:3001",
+      ];
+      if (!origin || allowed.includes(origin) || origin.endsWith(".vercel.app")) {
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
     credentials: true,
   })
 );
