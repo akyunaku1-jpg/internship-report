@@ -76,7 +76,7 @@ export default function Login() {
         email: trimmedEmail,
         name: response.data?.user?.user_metadata?.name || trimmedEmail.split("@")[0],
       });
-      navigate("/dashboard");
+      navigate("/dashboard", { replace: true });
     } catch (err) {
       setError(err?.response?.data?.error || "Unable to login.");
     } finally {

@@ -12,7 +12,9 @@ function statusBadgeClass(status) {
 }
 
 function formatShortDate(dateValue) {
-  return new Date(dateValue).toLocaleDateString("en-US", {
+  const date = new Date(dateValue || Date.now());
+  if (Number.isNaN(date.getTime())) return "-";
+  return date.toLocaleDateString("en-US", {
     month: "short",
     day: "numeric",
     year: "numeric",
@@ -155,7 +157,7 @@ export default function Dashboard() {
               {recentReports.map((report) => (
                 <div key={report.id} className="rounded-lg border border-[#E5EAF2] p-3">
                   <p className="font-medium">{report.task_title}</p>
-                  <p className="text-sm text-slate-500">{formatShortDate(report.report_date)} - {report.division || "-"}</p>
+                  <p className="text-sm text-slate-500">{formatShortDate(report.report_date || report.created_at)} - {report.division || "-"}</p>
                   <span className={`mt-2 inline-flex rounded-full px-2 py-1 text-xs font-medium ${statusBadgeClass(report.work_status)}`}>{report.work_status}</span>
                 </div>
               ))}
@@ -172,7 +174,7 @@ export default function Dashboard() {
                   <img src={report.attachment_url} alt={report.task_title} className="h-28 w-full object-cover" />
                   <div className="p-2">
                     <p className="truncate text-sm font-medium">{report.task_title}</p>
-                    <p className="text-xs text-slate-500">{formatShortDate(report.report_date)}</p>
+                    <p className="text-xs text-slate-500">{formatShortDate(report.report_date || report.created_at)}</p>
                   </div>
                 </div>
               ))}

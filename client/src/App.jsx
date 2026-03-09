@@ -1,6 +1,8 @@
 import { Navigate, Route, Routes } from "react-router-dom";
 import { SUPABASE_CONFIG_ERROR } from "./lib/supabase";
 import ProtectedRoute from "./components/ProtectedRoute";
+import Spinner from "./components/ui/Spinner";
+import { useAuth } from "./hooks/useAuth";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
@@ -18,6 +20,21 @@ import Teams from "./pages/Teams";
 import DataExport from "./pages/DataExport";
 
 const Placeholder = ({ title }) => <PageWrapper title={title}><div className="card p-8">{title} page coming soon.</div></PageWrapper>;
+
+function AuthAwareHome() {
+  const { session, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <Spinner />
+      </div>
+    );
+  }
+
+  if (session) return <Navigate to="/dashboard" replace />;
+  return <Login />;
+}
 
 export default function App() {
   if (SUPABASE_CONFIG_ERROR) {
@@ -44,7 +61,7 @@ export default function App() {
 
   return (
     <Routes>
-      <Route path="/" element={<Login />} />
+      <Route path="/" element={<AuthAwareHome />} />
       <Route path="/register" element={<Register />} />
       <Route
         path="/dashboard"
@@ -161,7 +178,7 @@ export default function App() {
           </ProtectedRoute>
         }
       />
-      <Route path="*" element={<Navigate to="/" replace />} />
+      <Route path="*" element={<AuthAwareHome />} />
     </Routes>
   );
 }
