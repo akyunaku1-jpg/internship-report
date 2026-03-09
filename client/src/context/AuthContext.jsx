@@ -12,6 +12,11 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (!supabase) {
+      setLoading(false);
+      return;
+    }
+
     const load = async () => {
       const {
         data: { session: currentSession },
@@ -31,7 +36,7 @@ export function AuthProvider({ children }) {
   }, []);
 
   useEffect(() => {
-    if (!user?.id) {
+    if (!supabase || !user?.id) {
       setProfile(null);
       return;
     }
@@ -66,7 +71,7 @@ export function AuthProvider({ children }) {
       profile,
       session,
       loading,
-      signOut: () => supabase.auth.signOut(),
+      signOut: () => (supabase ? supabase.auth.signOut() : Promise.resolve()),
     }),
     [user, profile, session, loading]
   );

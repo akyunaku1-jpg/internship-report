@@ -1,4 +1,5 @@
 import { Navigate, Route, Routes } from "react-router-dom";
+import { SUPABASE_CONFIG_ERROR } from "./lib/supabase";
 import ProtectedRoute from "./components/ProtectedRoute";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
@@ -19,6 +20,28 @@ import DataExport from "./pages/DataExport";
 const Placeholder = ({ title }) => <PageWrapper title={title}><div className="card p-8">{title} page coming soon.</div></PageWrapper>;
 
 export default function App() {
+  if (SUPABASE_CONFIG_ERROR) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-slate-50 p-6">
+        <div className="w-full max-w-xl rounded-xl border border-amber-200 bg-amber-50 p-6 text-amber-900 shadow-sm">
+          <h1 className="text-lg font-semibold">Configuration error</h1>
+          <p className="mt-2 text-sm">
+            {SUPABASE_CONFIG_ERROR}
+          </p>
+          <p className="mt-2 text-sm">
+            Add these variables in Vercel Project Settings - Environment Variables:
+            <br />
+            <code>VITE_SUPABASE_URL</code>
+            <br />
+            <code>VITE_SUPABASE_ANON_KEY</code>
+            <br />
+            <code>VITE_API_URL</code>
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <Routes>
       <Route path="/" element={<Login />} />
