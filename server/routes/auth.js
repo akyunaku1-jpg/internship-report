@@ -1,6 +1,6 @@
 import express from "express";
 import { body, validationResult } from "express-validator";
-import { supabase } from "../lib/supabase.js";
+import { hasAdminAccess, supabase } from "../lib/supabase.js";
 import { verifyToken } from "../middleware/verifyToken.js";
 
 const router = express.Router();
@@ -13,6 +13,9 @@ const ADMIN_EMAILS = new Set(
 );
 
 const findAuthUserByEmail = async (email) => {
+  if (!hasAdminAccess) {
+    return { user: null, error: new Error("SUPABASE_SERVICE_ROLE_KEY is required for admin user lookup.") };
+  }
   const normalizedEmail = email.trim().toLowerCase();
   const { data, error } = await supabase.auth.admin.listUsers({ page: 1, perPage: MAX_USER_SCAN });
   if (error) return { user: null, error };
@@ -21,6 +24,9 @@ const findAuthUserByEmail = async (email) => {
 };
 
 const confirmUserAndSignIn = async (email, password, userId) => {
+  if (!hasAdminAccess) {
+    return { data: null, error: new Error("SUPABASE_SERVICE_ROLE_KEY is required for user confirmation.") };
+  }
   const { error: confirmError } = await supabase.auth.admin.updateUserById(userId, { email_confirm: true });
   if (confirmError) return { data: null, error: confirmError };
   return supabase.auth.signInWithPassword({ email, password });
@@ -50,6 +56,7 @@ router.post(
   [body("email").isEmail(), body("password").isString().isLength({ min: 6 })],
   async (req, res, next) => {
     try {
+      console.log("[auth/login] request received");
       const errors = validationResult(req);
       if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
 
