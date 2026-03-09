@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import PageWrapper from "../components/layout/PageWrapper";
 import { formatDate } from "../utils/formatDate";
 import api from "../lib/axios";
+import { toErrorMessage } from "../utils/errorMessage";
 import { clearLegacyReports, getLegacyReports, getNormalizedLegacyReports } from "../utils/reportsStorage";
 import { useAuth } from "../hooks/useAuth";
 
@@ -79,10 +80,10 @@ export default function ReportHistory() {
       if (!isAdmin) {
         const localFallback = getNormalizedLegacyReports();
         setReports(localFallback);
-        setError(loadError?.response?.data?.error || "Unable to load reports from server. Showing local reports.");
+        setError(toErrorMessage(loadError?.response?.data?.error, "Unable to load reports from server. Showing local reports."));
       } else {
         setReports([]);
-        setError(loadError?.response?.data?.error || "Unable to load reports.");
+        setError(toErrorMessage(loadError?.response?.data?.error, "Unable to load reports."));
       }
     } finally {
       setLoading(false);
@@ -124,7 +125,7 @@ export default function ReportHistory() {
       setReports(nextReports);
       if (selectedReport?.id === id) setSelectedReport(null);
     } catch (deleteError) {
-      setError(deleteError?.response?.data?.error || "Failed to delete report.");
+      setError(toErrorMessage(deleteError?.response?.data?.error, "Failed to delete report."));
     }
   };
 
@@ -146,7 +147,7 @@ export default function ReportHistory() {
       setReports(nextReports);
       setEditState(null);
     } catch (saveError) {
-      setError(saveError?.response?.data?.error || "Failed to update report.");
+      setError(toErrorMessage(saveError?.response?.data?.error, "Failed to update report."));
     }
   };
 
@@ -228,7 +229,7 @@ export default function ReportHistory() {
         </section>
 
         <section className="card border-[#E5EAF2] bg-white p-4 md:p-5">
-          {error ? <p className="mb-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">{error}</p> : null}
+          {error ? <p className="mb-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">{String(error)}</p> : null}
           <div className="overflow-x-auto">
             <table className="w-full min-w-[920px] text-sm">
               <thead>

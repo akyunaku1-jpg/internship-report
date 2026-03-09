@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import PageWrapper from "../components/layout/PageWrapper";
 import { useAuth } from "../hooks/useAuth";
 import api from "../lib/axios";
+import { toErrorMessage } from "../utils/errorMessage";
 import { saveLegacyReport } from "../utils/reportsStorage";
 
 const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
@@ -136,7 +137,7 @@ export default function SubmitReport() {
       alert("Report submitted successfully.");
       navigate("/analytics");
     } catch (submitError) {
-      const message = submitError?.response?.data?.error || "Report submission failed.";
+      const message = toErrorMessage(submitError?.response?.data?.error, "Report submission failed.");
       const isUnauthorized = submitError?.response?.status === 401 || message.toLowerCase().includes("unauthorized");
       const isMissingReportsTable =
         message.toLowerCase().includes("could not find the table") ||
@@ -294,7 +295,7 @@ export default function SubmitReport() {
           />
         </section>
 
-        {error && <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
+        {error && <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{String(error)}</p>}
 
         <section className="flex justify-end gap-3">
           <button type="button" onClick={onCancel} className="rounded-lg border border-slate-300 bg-slate-100 px-4 py-2 font-medium text-slate-700">

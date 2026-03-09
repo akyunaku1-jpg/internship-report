@@ -2,6 +2,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { supabase } from "../lib/supabase";
 import api from "../lib/axios";
+import { toErrorMessage } from "../utils/errorMessage";
 
 const SAVED_ACCOUNTS_KEY = "savedLoginAccounts";
 
@@ -78,7 +79,7 @@ export default function Login() {
       });
       navigate("/dashboard", { replace: true });
     } catch (err) {
-      setError(err?.response?.data?.error || "Unable to login.");
+      setError(toErrorMessage(err?.response?.data?.error, "Unable to login."));
     } finally {
       setLoading(false);
     }
@@ -152,7 +153,7 @@ export default function Login() {
               </Link>
             </div>
 
-            {error && <p className="rounded-lg border border-red-200 bg-red-50 p-2 text-sm text-red-600">{error}</p>}
+            {error && <p className="rounded-lg border border-red-200 bg-red-50 p-2 text-sm text-red-600">{String(error)}</p>}
 
             <div className="flex items-center gap-4 pt-2">
               <button disabled={loading} className="rounded-2xl bg-gradient-to-r from-[#3C70E6] to-[#2E62D5] px-10 py-3 font-semibold text-white shadow-[0_10px_20px_rgba(60,112,230,0.32)] hover:from-[#3366da] hover:to-[#2757c5]">
