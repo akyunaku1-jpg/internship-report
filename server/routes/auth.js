@@ -57,6 +57,11 @@ router.post(
   async (req, res, next) => {
     try {
       console.log("[auth/login] request received");
+      console.log("ENV CHECK:", {
+        hasSupabaseUrl: !!process.env.SUPABASE_URL,
+        hasServiceKey: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
+        hasAnonKey: !!process.env.SUPABASE_ANON_KEY
+      });
       const errors = validationResult(req);
       if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
 
