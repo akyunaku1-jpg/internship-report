@@ -1,3 +1,4 @@
+import React from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
 import { SUPABASE_CONFIG_ERROR } from "./lib/supabase";
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -20,6 +21,21 @@ import Teams from "./pages/Teams";
 import DataExport from "./pages/DataExport";
 
 const Placeholder = ({ title }) => <PageWrapper title={title}><div className="card p-8">{title} page coming soon.</div></PageWrapper>;
+
+class ErrorBoundary extends React.Component {
+  state = { error: null };
+
+  componentDidCatch(error) {
+    this.setState({ error });
+  }
+
+  render() {
+    if (this.state.error) {
+      return <div style={{ padding: 20, color: "red" }}>Error: {this.state.error.message}</div>;
+    }
+    return this.props.children;
+  }
+}
 
 function AuthAwareHome() {
   const { session, loading } = useAuth();
@@ -67,7 +83,9 @@ export default function App() {
         path="/dashboard"
         element={
           <ProtectedRoute>
-            <Dashboard />
+            <ErrorBoundary>
+              <Dashboard />
+            </ErrorBoundary>
           </ProtectedRoute>
         }
       />

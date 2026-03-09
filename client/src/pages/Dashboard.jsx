@@ -54,37 +54,42 @@ export default function Dashboard() {
     loadReports();
   }, []);
 
-  const sortedReports = useMemo(
-    () =>
-      [...reports].sort((a, b) => {
-        const left = new Date(a.report_date || a.created_at || 0).getTime();
-        const right = new Date(b.report_date || b.created_at || 0).getTime();
-        return right - left;
-      }),
+  const safeReports = useMemo(
+    () => (Array.isArray(reports) ? reports.filter((item) => item && typeof item === "object") : []),
     [reports]
   );
-  const totalReports = reports.length;
-  const todaysReports = reports.filter((item) => item.report_date === today).length;
-  const completedReports = reports.filter((item) => item.work_status === "Completed").length;
-  const pendingReports = reports.filter((item) => item.work_status === "Pending").length;
+
+  const sortedReports = useMemo(
+    () =>
+      [...safeReports].sort((a, b) => {
+        const left = new Date(a?.report_date || a?.created_at || 0).getTime();
+        const right = new Date(b?.report_date || b?.created_at || 0).getTime();
+        return right - left;
+      }),
+    [safeReports]
+  );
+  const totalReports = safeReports?.length || 0;
+  const todaysReports = safeReports.filter((item) => item?.report_date === today).length;
+  const completedReports = safeReports.filter((item) => item?.work_status === "Completed").length;
+  const pendingReports = safeReports.filter((item) => item?.work_status === "Pending").length;
   const progress = totalReports === 0 ? 0 : Math.round((completedReports / totalReports) * 100);
   const recentReports = sortedReports.slice(0, 5);
-  const recentAttachments = sortedReports.filter((item) => item.attachment_url).slice(0, 4);
+  const recentAttachments = sortedReports.filter((item) => item?.attachment_url).slice(0, 4);
   const topPerformers = useMemo(() => {
     if (!isAdmin) return [];
 
-    const byUser = reports.reduce((acc, report) => {
-      const key = String(report.user_id || report.full_name || "unknown");
+    const byUser = safeReports.reduce((acc, report) => {
+      const key = String(report?.user_id || report?.full_name || "unknown");
       if (!acc[key]) {
         acc[key] = {
-          userId: report.user_id || null,
-          name: report.full_name || "Unknown User",
+          userId: report?.user_id || null,
+          name: report?.full_name || "Unknown User",
           total: 0,
           completed: 0,
         };
       }
       acc[key].total += 1;
-      if (report.work_status === "Completed") acc[key].completed += 1;
+      if (report?.work_status === "Completed") acc[key].completed += 1;
       return acc;
     }, {});
 
@@ -98,7 +103,7 @@ export default function Dashboard() {
         return b.total - a.total;
       })
       .slice(0, 5);
-  }, [isAdmin, reports]);
+  }, [isAdmin, safeReports]);
 
   return (
     <PageWrapper title="Dashboard">
@@ -154,11 +159,11 @@ export default function Dashboard() {
             {loading ? <p className="text-sm text-slate-500">Loading reports...</p> : null}
             {!loading && recentReports.length === 0 ? <p className="text-sm text-slate-500">No recent reports available.</p> : null}
             <div className="space-y-3">
-              {recentReports.map((report) => (
-                <div key={report.id} className="rounded-lg border border-[#E5EAF2] p-3">
-                  <p className="font-medium">{report.task_title}</p>
-                  <p className="text-sm text-slate-500">{formatShortDate(report.report_date || report.created_at)} - {report.division || "-"}</p>
-                  <span className={`mt-2 inline-flex rounded-full px-2 py-1 text-xs font-medium ${statusBadgeClass(report.work_status)}`}>{report.work_status}</span>
+              {recentReports.map((report, index) => (
+                <div key={report?.id || `recent-report-${index}`} className="rounded-lg border border-[#E5EAF2] p-3">
+                  <p className="font-medium">{report?.task_title || "-"}</p>
+                  <p className="text-sm text-slate-500">{formatShortDate(report?.report_date || report?.created_at)} - {report?.division || "-"}</p>
+                  <span className={`mt-2 inline-flex rounded-full px-2 py-1 text-xs font-medium ${statusBadgeClass(report?.work_status)}`}>{report?.work_status || "Pending"}</span>
                 </div>
               ))}
             </div>
@@ -169,12 +174,12 @@ export default function Dashboard() {
             {loading ? <p className="text-sm text-slate-500">Loading attachments...</p> : null}
             {!loading && recentAttachments.length === 0 ? <p className="text-sm text-slate-500">No recent attachments available.</p> : null}
             <div className="grid grid-cols-2 gap-3">
-              {recentAttachments.map((report) => (
-                <div key={report.id} className="overflow-hidden rounded-lg border border-[#E5EAF2]">
-                  <img src={report.attachment_url} alt={report.task_title} className="h-28 w-full object-cover" />
+              {recentAttachments.map((report, index) => (
+                <div key={report?.id || `recent-attachment-${index}`} className="overflow-hidden rounded-lg border border-[#E5EAF2]">
+                  <img src={report?.attachment_url || ""} alt={report?.task_title || "Attachment"} className="h-28 w-full object-cover" />
                   <div className="p-2">
-                    <p className="truncate text-sm font-medium">{report.task_title}</p>
-                    <p className="text-xs text-slate-500">{formatShortDate(report.report_date || report.created_at)}</p>
+                    <p className="truncate text-sm font-medium">{report?.task_title || "-"}</p>
+                    <p className="text-xs text-slate-500">{formatShortDate(report?.report_date || report?.created_at)}</p>
                   </div>
                 </div>
               ))}
