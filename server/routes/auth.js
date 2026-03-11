@@ -32,6 +32,21 @@ const confirmUserAndSignIn = async (email, password, userId) => {
   return supabase.auth.signInWithPassword({ email, password });
 };
 
+const createUserAndSignIn = async (email, password, name) => {
+  if (!hasAdminAccess) return { data: null, error: new Error("SUPABASE_SERVICE_ROLE_KEY is required for admin user creation.") };
+
+  const { data: createdUserData, error: createUserError } = await supabase.auth.admin.createUser({
+    email,
+    password,
+    email_confirm: true,
+    user_metadata: { name },
+  });
+
+  if (createUserError) return { data: null, error: createUserError };
+  if (!createdUserData?.user?.id) return { data: null, error: new Error("Unable to create user account.") };
+  return supabase.auth.signInWithPassword({ email, password });
+};
+
 const syncProfileRole = async (user, email) => {
   if (!user?.id) return;
   const normalizedEmail = String(email || "").trim().toLowerCase();
@@ -94,11 +109,14 @@ router.post(
       }
 
       const fallbackName = email.split("@")[0] || "New User";
-      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-        email,
-        password,
-        options: { data: { name: fallbackName } },
-      });
+      const createAndSignIn = hasAdminAccess
+        ? createUserAndSignIn(email, password, fallbackName)
+        : supabase.auth.signUp({
+            email,
+            password,
+            options: { data: { name: fallbackName } },
+          });
+      const { data: signUpData, error: signUpError } = await createAndSignIn;
 
       if (signUpError) {
         if (/already registered|already been registered/i.test(signUpError.message || "")) {
@@ -144,6 +162,18 @@ router.post(
 
     const email = req.body.email.trim().toLowerCase();
     const { password, name } = req.body;
+
+    if (hasAdminAccess) {
+      const { user: existingUser, error: existingUserError } = await findAuthUserByEmail(email);
+      if (existingUserError) return res.status(400).json({ error: existingUserError.message || "Unable to check existing account." });
+      if (existingUser?.id) return res.status(409).json({ error: "Email is already registered." });
+
+      const { data, error } = await createUserAndSignIn(email, password, name);
+      if (error) return res.status(400).json({ error: error.message || "Unable to register account." });
+      await syncProfileRole(data.user, email);
+      return res.status(201).json(data);
+    }
+
     const { data, error } = await supabase.auth.signUp({ email, password, options: { data: { name } } });
     if (error) {
       if (/already registered|already been registered/i.test(error.message || "")) {

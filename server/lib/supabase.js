@@ -9,11 +9,19 @@ const envDir = path.resolve(__dirname, "..");
 dotenv.config({ path: path.resolve(envDir, ".env.local") });
 dotenv.config({ path: path.resolve(envDir, ".env") });
 
-const url = process.env.SUPABASE_URL?.trim();
+const rawUrl = process.env.SUPABASE_URL?.trim();
 const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
 const anonKey = process.env.SUPABASE_ANON_KEY?.trim();
 const key = serviceRoleKey || anonKey;
-const isValidUrl = /^https?:\/\/[a-z0-9-]+\.supabase\.co$/i.test(url || "");
+const projectRefPattern = /^[a-z0-9-]+$/i;
+const normalizeSupabaseUrl = (value) => {
+  if (!value) return "";
+  if (/^https?:\/\//i.test(value)) return value;
+  if (projectRefPattern.test(value)) return `https://${value}.supabase.co`;
+  return value;
+};
+const url = normalizeSupabaseUrl(rawUrl);
+const isValidUrl = /^https?:\/\/[a-z0-9-]+\.supabase\.co$/i.test(url);
 const isValidKey = typeof key === "string" && key.startsWith("eyJ");
 export const hasAdminAccess = typeof serviceRoleKey === "string" && serviceRoleKey.startsWith("eyJ");
 
