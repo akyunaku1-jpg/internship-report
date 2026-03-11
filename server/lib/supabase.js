@@ -24,6 +24,8 @@ const url = normalizeSupabaseUrl(rawUrl);
 const isValidUrl = /^https?:\/\/[a-z0-9-]+\.supabase\.co$/i.test(url);
 const isValidKey = typeof key === "string" && key.startsWith("eyJ");
 export const hasAdminAccess = typeof serviceRoleKey === "string" && serviceRoleKey.startsWith("eyJ");
+export const supabaseUrl = url;
+export const supabaseAnonKey = anonKey || "";
 
 if (!isValidUrl || !isValidKey) {
   throw new Error(
@@ -36,3 +38,14 @@ if (!hasAdminAccess) {
 }
 
 export const supabase = createClient(url, key);
+
+export function createUserScopedClient(accessToken) {
+  if (!accessToken || !supabaseAnonKey) return supabase;
+  return createClient(supabaseUrl, supabaseAnonKey, {
+    global: {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    },
+  });
+}

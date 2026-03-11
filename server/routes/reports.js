@@ -1,5 +1,5 @@
 import express from "express";
-import { supabase } from "../lib/supabase.js";
+import { createUserScopedClient, hasAdminAccess, supabase } from "../lib/supabase.js";
 import { verifyToken } from "../middleware/verifyToken.js";
 
 const router = express.Router();
@@ -98,8 +98,13 @@ function respondWithReportError(res, error) {
   return res.status(400).json({ error: error?.message || "Report request failed." });
 }
 
-async function createNotification(userId, type, title, message) {
-  await supabase.from("notifications").insert({
+function resolveDbClient(req) {
+  if (hasAdminAccess) return supabase;
+  return createUserScopedClient(req.accessToken);
+}
+
+async function createNotification(dbClient, userId, type, title, message) {
+  await dbClient.from("notifications").insert({
     user_id: userId,
     type,
     title,
@@ -109,11 +114,12 @@ async function createNotification(userId, type, title, message) {
 }
 
 router.get("/", verifyToken, async (req, res) => {
+  const dbClient = resolveDbClient(req);
   const { userId } = req.query;
   const isAdmin = req.userRole === "admin";
 
   const { data, error } = await queryAcrossReportTables((table) => {
-    let query = supabase.from(table).select("*").order("report_date", { ascending: false }).order("created_at", { ascending: false });
+    let query = dbClient.from(table).select("*").order("report_date", { ascending: false }).order("created_at", { ascending: false });
     if (isAdmin && userId) {
       query = query.eq("user_id", userId);
     } else if (!isAdmin) {
@@ -126,15 +132,17 @@ router.get("/", verifyToken, async (req, res) => {
 });
 
 router.post("/", verifyToken, async (req, res) => {
+  const dbClient = resolveDbClient(req);
   const payload = toPayload(req.body, req.user.id);
   if (!payload.task_title || !payload.task_description || !payload.report_date) {
     return res.status(400).json({ error: "Task title, task description, and report date are required." });
   }
 
-  const { data, error } = await queryAcrossReportTables((table) => supabase.from(table).insert(payload).select("*").single());
+  const { data, error } = await queryAcrossReportTables((table) => dbClient.from(table).insert(payload).select("*").single());
   if (error) return respondWithReportError(res, error);
 
   await createNotification(
+    dbClient,
     req.user.id,
     "success",
     "Report Submitted",
@@ -143,6 +151,7 @@ router.post("/", verifyToken, async (req, res) => {
 
   if (payload.attachment_url) {
     await createNotification(
+      dbClient,
       req.user.id,
       "info",
       "Task Attachment Update",
@@ -154,14 +163,16 @@ router.post("/", verifyToken, async (req, res) => {
 });
 
 router.post("/sync", verifyToken, async (req, res) => {
+  const dbClient = resolveDbClient(req);
   const reports = Array.isArray(req.body?.reports) ? req.body.reports : [];
   if (!reports.length) return res.json({ synced: 0 });
 
   const payload = reports.map((item) => toPayload(item, req.user.id));
-  const { error } = await queryAcrossReportTables((table) => supabase.from(table).upsert(payload, { onConflict: "user_id,client_ref" }));
+  const { error } = await queryAcrossReportTables((table) => dbClient.from(table).upsert(payload, { onConflict: "user_id,client_ref" }));
   if (error) return respondWithReportError(res, error);
 
   await createNotification(
+    dbClient,
     req.user.id,
     "success",
     "Report Sync Completed",
@@ -172,13 +183,14 @@ router.post("/sync", verifyToken, async (req, res) => {
 });
 
 router.put("/:id", verifyToken, async (req, res) => {
+  const dbClient = resolveDbClient(req);
   const { id } = req.params;
   const payload = toUpdatePayload(req.body);
   if (!Object.keys(payload).length) return res.status(400).json({ error: "No fields provided for update." });
   const isAdmin = req.userRole === "admin";
 
   const { data, error } = await queryAcrossReportTables((table) => {
-    let query = supabase.from(table).update(payload).eq("id", id);
+    let query = dbClient.from(table).update(payload).eq("id", id);
     if (!isAdmin) query = query.eq("user_id", req.user.id);
     return query.select("*").single();
   });
@@ -187,10 +199,11 @@ router.put("/:id", verifyToken, async (req, res) => {
 });
 
 router.delete("/:id", verifyToken, async (req, res) => {
+  const dbClient = resolveDbClient(req);
   const { id } = req.params;
   const isAdmin = req.userRole === "admin";
   const { error } = await queryAcrossReportTables((table) => {
-    let query = supabase.from(table).delete().eq("id", id);
+    let query = dbClient.from(table).delete().eq("id", id);
     if (!isAdmin) query = query.eq("user_id", req.user.id);
     return query;
   });
